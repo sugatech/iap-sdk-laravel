@@ -36,5 +36,4 @@ class IAPServiceProvider extends ServiceProvider
     {
         return __DIR__ . '/../config/iap.php';
     }
-
 }
