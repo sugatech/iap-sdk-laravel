@@ -67,7 +67,7 @@ class IAPClient
      * @param string $productId
      * @param string $type
      * @param string|array $receipt
-     * @return bool
+     * @return array
      */
     public function createPurchase($owner, $productId, $type, $receipt)
     {
@@ -82,6 +82,6 @@ class IAPClient
             return $request->asJson()
                 ->post($this->getUrl('/purchases'), $params);
         })
-            ->successful();
+            ->json();
     }
 }
