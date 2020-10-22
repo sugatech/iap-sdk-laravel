@@ -1,6 +1,6 @@
 {
     "name": "sugatech/iap-sdk-laravel",
-    "version": "20.0.1",
+    "version": "20.0.2",
     "description": "IAP SDK for Laravel and Lumen",
     "license": "MIT",
     "minimum-stability": "stable",
