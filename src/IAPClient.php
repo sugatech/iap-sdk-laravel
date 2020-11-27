@@ -6,6 +6,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use OAuth2ClientCredentials\OAuthClient;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class IAPClient
 {
@@ -42,6 +43,7 @@ class IAPClient
     {
         $request = Http::withHeaders([
             'Authorization' => 'Bearer ' . $this->oauthClient->getAccessToken(),
+            'Accept' => 'application/json',
         ])
             ->withoutVerifying();
 
@@ -65,7 +67,7 @@ class IAPClient
 
     /**
      * @param string $owner
-     * @param string $productId
+     * @param int $productId
      * @param string $type
      * @param string|array $receipt
      * @return array
@@ -80,12 +82,16 @@ class IAPClient
             'receipt' => $receipt,
         ];
 
-        return $this->request(function (PendingRequest $request) use ($params) {
+        $response = $this->request(function (PendingRequest $request) use ($params) {
             return $request->asJson()
                 ->post($this->getUrl('/purchases'), $params);
-        })
-            ->throw()
-            ->json();
+        });
+
+        if ($response->failed()) {
+            throw new HttpException($response->status(), $response->json('message'));
+        }
+
+        return $response->json();
     }
 
     /**
@@ -95,14 +101,18 @@ class IAPClient
      */
     public function getProducts($params = [])
     {
-        return $this->request(function (PendingRequest $request) use ($params) {
+        $response = $this->request(function (PendingRequest $request) use ($params) {
             return $request->get(
                 $this->getUrl('/products'),
                 $params
             );
-        })
-            ->throw()
-            ->json();
+        });
+
+        if ($response->failed()) {
+            throw new HttpException($response->status(), $response->json('message'));
+        }
+
+        return $response->json();
     }
 
     /**
@@ -112,13 +122,17 @@ class IAPClient
      */
     public function getProduct($productId)
     {
-        return $this->request(function (PendingRequest $request) use ($productId) {
+        $response = $this->request(function (PendingRequest $request) use ($productId) {
             return $request->get(
                 $this->getUrl('/products/' . $productId)
             );
-        })
-            ->throw()
-            ->json();
+        });
+
+        if ($response->failed()) {
+            throw new HttpException($response->status(), $response->json('message'));
+        }
+
+        return $response->json();
     }
 
     /**
@@ -140,14 +154,16 @@ class IAPClient
             'value' => $value
         ];
 
-        return $this->request(function (PendingRequest $request) use ($params) {
-            return $request->post(
-                $this->getUrl('/products'),
-                $params
-            );
-        })
-            ->throw()
-            ->json();
+        $response = $this->request(function (PendingRequest $request) use ($params) {
+            return $request->asJson()
+                ->post($this->getUrl('/products'), $params);
+        });
+
+        if ($response->failed()) {
+            throw new HttpException($response->status(), $response->json('message'));
+        }
+
+        return $response->json();
     }
 
     /**
@@ -158,13 +174,15 @@ class IAPClient
      */
     public function updateProduct($productId, $params = [])
     {
-        return $this->request(function (PendingRequest $request) use ($productId, $params) {
-            return $request->put(
-                $this->getUrl('/products/' . $productId),
-                $params
-            );
-        })
-            ->throw()
-            ->json();
+        $response = $this->request(function (PendingRequest $request) use ($productId, $params) {
+            return $request->asJson()
+                ->put($this->getUrl('/products/' . $productId), $params);
+        });
+
+        if ($response->failed()) {
+            throw new HttpException($response->status(), $response->json('message'));
+        }
+
+        return $response->json();
     }
 }
