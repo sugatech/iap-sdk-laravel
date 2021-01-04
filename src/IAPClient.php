@@ -6,6 +6,7 @@ use Illuminate\Http\Client\PendingRequest;
 use Illuminate\Http\Client\Response;
 use Illuminate\Support\Facades\Http;
 use OAuth2ClientCredentials\OAuthClient;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 class IAPClient
 {
@@ -36,11 +37,13 @@ class IAPClient
     /**
      * @param callable $handler
      * @return Response
+     * @throws \Illuminate\Http\Client\RequestException
      */
     private function request($handler)
     {
         $request = Http::withHeaders([
             'Authorization' => 'Bearer ' . $this->oauthClient->getAccessToken(),
+            'Accept' => 'application/json',
         ])
             ->withoutVerifying();
 
@@ -64,10 +67,11 @@ class IAPClient
 
     /**
      * @param string $owner
-     * @param string $productId
+     * @param int $productId
      * @param string $type
      * @param string|array $receipt
      * @return array
+     * @throws \Illuminate\Http\Client\RequestException
      */
     public function createPurchase($owner, $productId, $type, $receipt)
     {
@@ -78,10 +82,107 @@ class IAPClient
             'receipt' => $receipt,
         ];
 
-        return $this->request(function (PendingRequest $request) use ($params) {
+        $response = $this->request(function (PendingRequest $request) use ($params) {
             return $request->asJson()
                 ->post($this->getUrl('/purchases'), $params);
-        })
-            ->json();
+        });
+
+        if ($response->failed()) {
+            throw new HttpException($response->status(), $response->json('message'));
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * @param array $params ['page' => 1, 'limit' => 10, 'sort' => 'id', 'dir' => 'asc']
+     * @return array[]
+     * @throws \Illuminate\Http\Client\RequestException
+     */
+    public function getProducts($params = [])
+    {
+        $response = $this->request(function (PendingRequest $request) use ($params) {
+            return $request->get(
+                $this->getUrl('/products'),
+                $params
+            );
+        });
+
+        if ($response->failed()) {
+            throw new HttpException($response->status(), $response->json('message'));
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * @param int $productId
+     * @return array
+     * @throws \Illuminate\Http\Client\RequestException
+     */
+    public function getProduct($productId)
+    {
+        $response = $this->request(function (PendingRequest $request) use ($productId) {
+            return $request->get(
+                $this->getUrl('/products/' . $productId)
+            );
+        });
+
+        if ($response->failed()) {
+            throw new HttpException($response->status(), $response->json('message'));
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * @param string $storeKey
+     * @param string $name
+     * @param string $imageUrl
+     * @param float $price
+     * @param float $value
+     * @return array
+     * @throws \Illuminate\Http\Client\RequestException
+     */
+    public function createProduct($storeKey, $name, $imageUrl, $price, $value)
+    {
+        $params = [
+            'store_key' => $storeKey,
+            'name' => $name,
+            'image_url' => $imageUrl,
+            'price' => $price,
+            'value' => $value
+        ];
+
+        $response = $this->request(function (PendingRequest $request) use ($params) {
+            return $request->asJson()
+                ->post($this->getUrl('/products'), $params);
+        });
+
+        if ($response->failed()) {
+            throw new HttpException($response->status(), $response->json('message'));
+        }
+
+        return $response->json();
+    }
+
+    /**
+     * @param int $productId
+     * @param array $params ['name' => '', 'price' => '', 'value' => '']
+     * @return array
+     * @throws \Illuminate\Http\Client\RequestException
+     */
+    public function updateProduct($productId, $params = [])
+    {
+        $response = $this->request(function (PendingRequest $request) use ($productId, $params) {
+            return $request->asJson()
+                ->put($this->getUrl('/products/' . $productId), $params);
+        });
+
+        if ($response->failed()) {
+            throw new HttpException($response->status(), $response->json('message'));
+        }
+
+        return $response->json();
     }
 }

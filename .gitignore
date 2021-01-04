@@ -2,6 +2,8 @@
 /.editorconfig
 /.styleci.yml
 
+/composer.lock
+
 ### Laravel IDE Helper
 _ide_helper.php
 _ide_helper_models.php
